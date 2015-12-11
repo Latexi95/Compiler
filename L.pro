@@ -25,7 +25,8 @@ HEADERS += \
     src/common/error_handler.h \
     src/common/error_producer.h \
     src/common/error_codes.h \
-    src/parser/lexer_error_producer.h
+    src/parser/lexer_error_producer.h \
+    src/parser/lexer_settings.h
 
 INCLUDEPATH += D:/Programming/Libs/boost_1_59_0
 

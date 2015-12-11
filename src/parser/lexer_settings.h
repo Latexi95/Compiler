@@ -1,0 +1,5 @@
+#ifndef LEXER_SETTINGS
+#define LEXER_SETTINGS
+
+#endif // LEXER_SETTINGS
+

@@ -6,6 +6,10 @@ enum class token_type {
     t_identifier,
     t_float_literal,
     t_hex_literal,
+    t_u8_string_literal,
+    t_u16_string_literal,
+    t_u32_string_literal,
+    t_ascii_string_literal,
     t_target_comment,
 
     t_and,
@@ -85,6 +89,7 @@ enum class token_type {
     k_protected,
     k_private,
     k_reinterpret_cast,
+    k_compile_time,
 
     invalid
 };

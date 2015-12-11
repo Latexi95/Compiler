@@ -1,6 +1,8 @@
 #include "lexer.h"
 #include "lexer_error_producer.h"
+#include "lexer_settings.h"
 #include <unordered_map>
+
 
 lexer::lexer(const code &c) :
     _c(c),
@@ -12,12 +14,13 @@ lexer::lexer(const code &c) :
 
 bool lexer::parse()
 {
-    fatal_error = false;
+    _fatal_error = false;
     char c;
-    while ((c = next_rc()) != '\0' && !fatal_error) {
+    while ((c = next_rc()) != '\0' && !_fatal_error) {
         if (skip_spaces()) continue;
         if (handle_comments()) continue;
         if (handle_operators()) continue;
+        if (handle_string_literals()) continue;
         if (handle_identifiers()) continue;
     }
     return true;
@@ -92,7 +95,8 @@ token_type lexer::is_keyword(code_point start, code_point end)
         {"public", token_type::k_public},
         {"protected", token_type::k_protected},
         {"private", token_type::k_private},
-        {"reinterpret_cast", token_type::k_reinterpret_cast}
+        {"reinterpret_cast", token_type::k_reinterpret_cast},
+        {"compile_time", token_type::k_compile_time}
     };
 
     auto it = keywordmap.find(_c.view_range(start, end));
@@ -109,7 +113,7 @@ void lexer::add_token(token_type t, code_point cp, code_point end)
 
 bool lexer::skip_spaces()
 {
-    char c = ca();
+    char c = ch();
     if (!is_space(c)) return false;
     do {
         c = next_rc();
@@ -205,7 +209,7 @@ bool lexer::handle_operators()
 
     for (unsigned i = 0; i < sizeof(op_tokens); ++i) {
         int ci = 0;
-        while (ca(ci) == op_tokens[i].key[ci]) {
+        while (ch(ci) == op_tokens[i].key[ci]) {
             ++ci;
             if (op_tokens[i].key[ci] == 0) {
                 add_token(op_tokens[i].type, _cp, _cp + ci);
@@ -220,11 +224,11 @@ bool lexer::handle_operators()
 bool lexer::handle_comments()
 {
     code_point commentStart = _cp;
-    if (ca() == '/') {
-        if (ca(1) == '/') {
+    if (ch() == '/') {
+        if (ch(1) == '/') {
             skip(2);
             bool isTargettedComment = false;
-            if (ca() == '/') {
+            if (ch() == '/') {
                 skip(1);
                 isTargettedComment = true;
             }
@@ -242,10 +246,10 @@ bool lexer::handle_comments()
             }
             return true;
         }
-        else if (ca(1) == '*') {
+        else if (ch(1) == '*') {
             skip(2);
             bool isTargettedComment = false;
-            if (ca() == '*') {
+            if (ch() == '*') {
                 skip(1);
                 isTargettedComment = true;
             }
@@ -271,7 +275,7 @@ bool lexer::handle_comments()
 
 bool lexer::handle_identifiers()
 {
-    char c = ca();
+    char c = ch();
     code_point start = _cp;
     if (is_alpha(c) || c == '_') {
         while ((c = next_r()) && 
@@ -292,8 +296,109 @@ bool lexer::handle_identifiers()
     return false;
 }
 
+bool lexer::handle_string_literals()
+{
+    token_type string_literal_type = token_type::t_u8_string_literal;
+    code_point offset = 0;
+    code_point start = _cp;
+    if (ch() == 'a' || ch() == 'A') {
+        ++offset;
+        string_literal_type = token_type::t_ascii_string_literal;
+    }
+    else if ((ch() == 'u' || ch() == 'U') && ch(1) == '8') {
+        offset += 2;
+        string_literal_type = token_type::t_u8_string_literal;
+    }
+    else if ((ch() == 'u' || ch() == 'U') && ch(1) == '1' && ch(2) == '6') {
+        offset += 3;
+        string_literal_type = token_type::t_u16_string_literal;
+    }
+    else if ((ch() == 'u' || ch() == 'U') && ch(1) == '3' && ch(2) == '2') {
+        offset += 3;
+        string_literal_type = token_type::t_u32_string_literal;
+    }
 
-char lexer::ca(code_point offset)
+    //Raw string literal
+    if (ch(offset) == 'r' && ch(offset + 1) == '"') {
+        skip(offset + 1);
+        code_point delimiterStart = _cp + 1;
+        char c = '\0';
+        while (c = next_r() && c != '(') {
+            if (is_space(c) || c == '\\' || c == ')') {
+                _err->invalid_character_in_raw_string_literal_delimiter(_cp, c);
+                _fatal_error = true;
+                return true;
+            }
+            if (_cp - delimiterStart >= lexer_settings::MAX_RAW_LITERAL_DELIMITER_LENGTH) {
+                _err->too_long_raw_string_literal_delimiter(delimiterStart);
+                _fatal_error = true;
+                return true;
+            }
+        }
+
+        if (c == '\0') {
+            _err->missing_comment_ending(_cp, start);
+            _fatal_error = true;
+            return true;
+        }
+        string_view delimiter = _c.view_range(delimiterStart, _cp);
+
+        code_point literalStart = _cp + 1;
+        code_point literalEnd = 0;
+        while ((c = next_r())) {
+            if (c == ')') {
+                if (_c.view(_cp + 1, delimiter.size()) == delimiter && _c.c(_cp + 1 + delimiter.size()) == '"') {
+                    literalEnd = _cp;
+                    skip(delimiter.size() + 1);
+                    break;
+                }
+            }
+        }
+        if (!literalEnd) {
+            _err->missing_comment_ending(_cp, start);
+            _fatal_error = true;
+            return true;
+        }
+        _c.add_string_literal(start, _c.view_range(literalStart, literalEnd));
+        add_token(string_literal_type, start, _cp);
+        return true;
+    }
+    else if (ch(offset) == '"') {
+        skip(offset);
+        std::string literal;
+        char c = '\0';
+        bool escape = false;
+        while ((c = next_r()) && (c != '"' || escape)) {
+            if (escape) {
+                switch (c) {
+                case '\'': literal += '\''; break;
+                case '"': literal += '"'; break;
+                case '\\': literal += '\\'; break;
+                case 'a': literal += '\a'; break;
+                case 'b': literal += '\b'; break;
+                case 'f': literal += '\f'; break;
+                case 'n': literal += '\n'; break;
+                case 'r': literal += '\r'; break;
+                case 't': literal += '\t'; break;
+                case 'v': literal += '\v'; break;
+                case 'x': {
+
+                }
+                }
+                escape = false;
+            }
+            else if (c == '\\'){
+                escape = true;
+            }
+
+        }
+
+    }
+    return false;
+}
+
+
+char lexer::ch(code_point offset)
 {
     return _c.c(_cp + offset);
 }

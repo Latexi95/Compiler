@@ -46,6 +46,12 @@ code_point_info code::info(code_point cp) const
                 (int)(cp - lastLineChange),
                 (int)line,
                 _file_name
-            };
+    };
+}
+
+string_view code::add_string_literal(const std::string &lit)
+{
+    auto insertResult = _string_literals.insert(lit);
+    return *insertResult.first;
 }
 
