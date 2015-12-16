@@ -4,7 +4,7 @@
 #include <unordered_map>
 
 
-lexer::lexer(const code &c) :
+lexer::lexer(code &c) :
     _c(c),
     _err(new lexer_error_producer(c)),
     _cp(c.begin())
@@ -12,18 +12,24 @@ lexer::lexer(const code &c) :
 
 }
 
-bool lexer::parse()
+lexer::~lexer()
+{
+
+}
+
+bool lexer::tokenize()
 {
     _fatal_error = false;
-    char c;
-    while ((c = next_rc()) != '\0' && !_fatal_error) {
+    _cp = 0;
+    while (ch() != '\0' && !_fatal_error) {
         if (skip_spaces()) continue;
         if (handle_comments()) continue;
         if (handle_operators()) continue;
         if (handle_string_literals()) continue;
         if (handle_identifiers()) continue;
+        if (handle_numbers()) continue;
     }
-    return true;
+    return _err->error_count() == 0;
 }
 
 error_producer &lexer::err_producer()
@@ -46,34 +52,15 @@ bool lexer::is_number(char c)
     return c >= '0' && c <= '9';
 }
 
+bool lexer::is_hex(char c)
+{
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
 token_type lexer::is_keyword(code_point start, code_point end)
 {
-    /*
-     * k_if,
-    k_for,
-    k_in,
-    k_where,
-    k_while,
-    k_do,
-    k_namespace,
-    k_var,
-    k_mut,
-    k_match,
-    k_enum,
-    k_struct,
-    k_use,
-    k_break,
-    k_trait,
-    k_continue,
-    k_extern,
-    k_module,
-    k_impl,
-    k_public,
-    k_protected,
-    k_private,
-    k_reinterpret_cast,
-     */
     static std::unordered_map<string_view, token_type> keywordmap = {
+        {"as", token_type::k_as},
         {"for"_sv, token_type::k_for},
         {"in"_sv, token_type::k_in},
         {"where"_sv, token_type::k_where},
@@ -96,7 +83,9 @@ token_type lexer::is_keyword(code_point start, code_point end)
         {"protected", token_type::k_protected},
         {"private", token_type::k_private},
         {"reinterpret_cast", token_type::k_reinterpret_cast},
-        {"compile_time", token_type::k_compile_time}
+        {"compile_time", token_type::k_compile_time},
+        {"fn", token_type::k_fn},
+        {"return", token_type::k_return}
     };
 
     auto it = keywordmap.find(_c.view_range(start, end));
@@ -108,23 +97,23 @@ token_type lexer::is_keyword(code_point start, code_point end)
 
 void lexer::add_token(token_type t, code_point cp, code_point end)
 {
-    _tokens.emplace_back(t, _c.view_range(cp, end), cp);
+    _c.add_token(token(t, _c.view_range(cp, end), cp));
 }
 
 bool lexer::skip_spaces()
 {
     char c = ch();
     if (!is_space(c)) return false;
-    do {
-        c = next_rc();
-    } while (is_space(c));
+    while ((c = next()) && is_space(c)) {
+
+    }
     return true;
 }
 
 void lexer::skip(size_t steps)
 {
     for (size_t i = 0; i < steps; ++i) {
-        next_rc();
+        next();
     }
 }
 
@@ -197,6 +186,7 @@ bool lexer::handle_operators()
 
         OP(t_dollar, "$"),
         OP(t_at, "@"),                   //@
+        OP(t_backslash, "\\"),
 
 
         OP(t_brace_left, "{"),
@@ -207,13 +197,13 @@ bool lexer::handle_operators()
         OP(t_bracket_right, "]")
     };
 
-    for (unsigned i = 0; i < sizeof(op_tokens); ++i) {
+    for (unsigned i = 0; i < sizeof(op_tokens) / sizeof(op_tokens[0]); ++i) {
         int ci = 0;
         while (ch(ci) == op_tokens[i].key[ci]) {
             ++ci;
             if (op_tokens[i].key[ci] == 0) {
                 add_token(op_tokens[i].type, _cp, _cp + ci);
-                skip(ci - 1);
+                skip(ci);
                 return true;
             }
         }
@@ -265,7 +255,7 @@ bool lexer::handle_comments()
             }
 
             if (isTargettedComment) {
-                add_token(token_type::t_target_comment, start, _cp);
+                add_token(token_type::t_target_comment, start, _cp - 2);
             }
             return true;
         }
@@ -278,7 +268,7 @@ bool lexer::handle_identifiers()
     char c = ch();
     code_point start = _cp;
     if (is_alpha(c) || c == '_') {
-        while ((c = next_r()) && 
+        while ((c = next()) &&
                (
                    is_alpha(c) ||
                    c == '_' ||
@@ -288,6 +278,7 @@ bool lexer::handle_identifiers()
         token_type keyword_type = is_keyword(start, _cp);
         if (keyword_type != token_type::invalid) {
             add_token(keyword_type, start, _cp);
+            return true;
         }
         
         add_token(token_type::t_identifier, start, _cp);
@@ -323,7 +314,7 @@ bool lexer::handle_string_literals()
         skip(offset + 1);
         code_point delimiterStart = _cp + 1;
         char c = '\0';
-        while (c = next_r() && c != '(') {
+        while ((c = next()) && c != '(') {
             if (is_space(c) || c == '\\' || c == ')') {
                 _err->invalid_character_in_raw_string_literal_delimiter(_cp, c);
                 _fatal_error = true;
@@ -345,7 +336,7 @@ bool lexer::handle_string_literals()
 
         code_point literalStart = _cp + 1;
         code_point literalEnd = 0;
-        while ((c = next_r())) {
+        while ((c = next())) {
             if (c == ')') {
                 if (_c.view(_cp + 1, delimiter.size()) == delimiter && _c.c(_cp + 1 + delimiter.size()) == '"') {
                     literalEnd = _cp;
@@ -368,7 +359,7 @@ bool lexer::handle_string_literals()
         std::string literal;
         char c = '\0';
         bool escape = false;
-        while ((c = next_r()) && (c != '"' || escape)) {
+        while ((c = next()) && (c != '"' || escape)) {
             if (escape) {
                 switch (c) {
                 case '\'': literal += '\''; break;
@@ -382,7 +373,17 @@ bool lexer::handle_string_literals()
                 case 't': literal += '\t'; break;
                 case 'v': literal += '\v'; break;
                 case 'x': {
-
+                    if (!is_hex(ch(1)) || !is_hex(ch(2))) {
+                        _err->invalid_string_literal_escape_sequence(_cp, std::string("\\x") + ch(1) + ch(2));
+                    }
+                    else {
+                        char hex_str[3] = {ch(1), ch(2), 0};
+                        char *end_ptr = 0;
+                        skip(2);
+                        unsigned long charVal = std::strtoul(hex_str, &end_ptr, 16);
+                        literal += (char)charVal;
+                    }
+                    break;
                 }
                 }
                 escape = false;
@@ -390,9 +391,88 @@ bool lexer::handle_string_literals()
             else if (c == '\\'){
                 escape = true;
             }
-
+            else {
+                literal += c;
+            }
         }
 
+        if (c == 0) {
+            _err->missing_ending_of_string_literal(_cp, start);
+            _fatal_error = true;
+            return true;
+        }
+        next();
+        _c.add_string_literal(start, literal);
+        add_token(string_literal_type, start, _cp);
+        return true;
+    }
+    return false;
+}
+
+bool lexer::handle_numbers()
+{
+    char c = ch();
+    code_point number_start = _cp;
+    if (c == '0' && (ch(1) == 'x' && ch(1) == 'X')) {
+        next();
+        while ((c == next()) && is_hex(c)) { }
+        if (number_start + 2 == _cp) {
+            _err->invalid_number_literal_unexpected_char(_cp, c);
+            return false;
+        }
+
+        add_token(token_type::t_hex_literal, number_start, _cp);
+        return true;
+    }
+    if (c == '0' && (ch(1) == 'b' && ch(1) == 'B')) {
+        next();
+        while ((c == next()) && (c == '0' || c == '1')) { }
+        if (number_start + 2 == _cp) {
+            _err->invalid_number_literal_unexpected_char(_cp, c);
+            return false;
+        }
+
+        add_token(token_type::t_binary_literal, number_start, _cp);
+        return true;
+    }
+
+    if (is_number(c)) {
+        token_type number_type = token_type::t_integer_literal;
+        bool hasExponentPart = false;
+        while ((c = next()) && is_number(c)) { }
+        if (c == '.' && is_number(ch(1))) {
+            number_type = token_type::t_float_literal;
+            next();
+        }
+        else if (c == 'e' || c == 'E') {
+            hasExponentPart = true;
+            number_type = token_type::t_float_literal;
+        }
+
+        if (number_type == token_type::t_float_literal) {
+            if (!hasExponentPart) {
+                while ((c = next()) && is_number(c)) { }
+            }
+
+            if (c == 'e' || c == 'E') {
+                code_point exponent_start = _cp;
+                code_point exp_number_start = _cp + 1;
+                if (ch(1) == '+' || ch(1) == '-') {
+                    exp_number_start++;
+                    next();
+                }
+                while ((c = next()) && is_number(c)) { }
+
+                if (_cp == exp_number_start) {
+                    //Doesn't actually have proper exponent part
+                    _cp = exponent_start;
+                }
+            }
+        }
+        code_point number_end = _cp;
+
+        add_token(number_type, number_start, number_end);
+        return true;
     }
     return false;
 }
@@ -410,9 +490,11 @@ char lexer::next_rc()
     return c;
 }
 
-char lexer::next_r()
+char lexer::next()
 {
     _cp = _c.next(_cp);
     return _c.c(_cp);
 }
+
+
 

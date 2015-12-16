@@ -9,6 +9,7 @@ class error_handler
 {
 public:
     error_handler();
+    virtual ~error_handler();
     virtual void handle_error(error_code code, code_point_info location, const std::string &msg) = 0;
     virtual void handle_warning(warning_code code, code_point_info location, const std::string &msg) = 0;
 private:

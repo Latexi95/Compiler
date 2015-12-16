@@ -1,0 +1,16 @@
+set(Boost_USE_STATIC_LIBS    ON)
+set(Boost_USE_MULTITHREADED  ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+find_package(Boost 1.59.0 REQUIRED COMPONENTS serialization system filesystem unit_test_framework)
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories("../src")
+add_definitions(-DBOOST_NO_AUTO_PTR)
+add_definitions(-DTEST_DIRECTORY="../test")
+add_executable(lexer lexer.cpp)
+target_link_libraries(lexer ${Boost_FILESYSTEM_LIBRARY} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+target_link_libraries(lexer common compiler_lib test_support)
+
+target_compile_features(lexer PRIVATE cxx_range_for)
+enable_testing()
+
+add_test(lexer lexer)

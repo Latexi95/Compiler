@@ -1,5 +1,4 @@
 *.autosave
-*.txt
 *.exe
 *.user
 *.user.*
@@ -17,3 +16,4 @@ Makefile.*
 *.res
 *.s
 *.dll
+build

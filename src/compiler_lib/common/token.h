@@ -1,11 +1,13 @@
 #pragma once
-#include "../common/string_view.h"
-#include "../common/code_point.h"
+#include "../../common/string_view.h"
+#include "../../common/code_point.h"
 
 enum class token_type {
     t_identifier,
     t_float_literal,
+    t_integer_literal,
     t_hex_literal,
+    t_binary_literal,
     t_u8_string_literal,
     t_u16_string_literal,
     t_u32_string_literal,
@@ -57,6 +59,7 @@ enum class token_type {
 
     t_dollar,
     t_at,                   //@
+    t_backslash,            //   \
 
 
     t_brace_left,
@@ -66,6 +69,7 @@ enum class token_type {
     t_bracket_left,
     t_bracket_right,
 
+    k_as,
     k_if,
     k_for,
     k_in,
@@ -90,8 +94,11 @@ enum class token_type {
     k_private,
     k_reinterpret_cast,
     k_compile_time,
+    k_fn,
+    k_return,
 
-    invalid
+    invalid,
+    last_token_type
 };
 
 class token
@@ -101,12 +108,14 @@ public:
     token_type type() const { return _type; }
     string_view text() const { return _name; }
     code_point point() const { return _cp; }
+    std::string to_string() const;
+
+    static const char *token_type_name(token_type t);
 private:
     token_type _type;
     string_view _name;
     code_point _cp;
 };
-
 
 
 

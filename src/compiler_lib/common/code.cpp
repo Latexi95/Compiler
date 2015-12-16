@@ -1,11 +1,14 @@
 #include "code.h"
+#include <cassert>
+#include <fstream>
 
-code::code(std::string file_name)
+code::code(std::string file_name) :
+    _file_name(file_name)
 {
 
 }
 
-void code::set_code(std::string code)
+void code::set_code(const std::string &code)
 {
     _code = code;
     for (code_point i = 0; i < _code.size(); ++i) {
@@ -32,13 +35,13 @@ string_view code::view_range(code_point cp, size_t cpEnd) const
 
 code_point_info code::info(code_point cp) const
 {
-    unsigned line = 0;
+    unsigned line = 1;
     code_point lastLineChange = 0;
     for (code_point lc : _line_changes) {
         if (cp < lc) {
-            lastLineChange = lc;
             break;
         }
+        lastLineChange = lc;
         ++line;
     }
 
@@ -49,9 +52,23 @@ code_point_info code::info(code_point cp) const
     };
 }
 
-string_view code::add_string_literal(const std::string &lit)
+void code::add_string_literal(code_point location, const std::string &lit)
 {
-    auto insertResult = _string_literals.insert(lit);
-    return *insertResult.first;
+    _string_literals[location] = lit;
+}
+
+string_view code::string_literal(code_point location) const
+{
+    auto it = _string_literals.find(location);
+    assert(it != _string_literals.end());
+    return string_view(it->second);
+}
+
+void code::print_tokens()
+{
+    std::ofstream out("tokens.txt");
+
+
+
 }
 

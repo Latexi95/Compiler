@@ -1,0 +1,4 @@
+add_subdirectory(common)
+add_subdirectory(compiler_lib)
+add_subdirectory(compiler)
+add_subdirectory(test_support)

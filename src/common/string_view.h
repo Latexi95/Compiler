@@ -2,6 +2,7 @@
 #include <string>
 #include <cstring>
 #include <algorithm>
+#include <unordered_set>
 
 
 
@@ -56,11 +57,13 @@ public:
 
     bool operator == (const basic_string_view &s) const {
         if (_size != s._size) return false;
+        if (_ptr == s._ptr) return true;
         return Traits::compare(_ptr, s._ptr, _size) == 0;
     }
 
     bool operator != (const basic_string_view &s) const {
         if (_size != s._size) return true;
+        if (_ptr == s._ptr) return false;
         return Traits::compare(_ptr, s._ptr, _size) != 0;
     }
 
@@ -94,6 +97,18 @@ private:
 
 typedef basic_string_view<char> string_view;
 typedef basic_string_view<wchar_t> wstring_view;
+
+template <typename CharT, typename Traits, typename Allocator>
+std::basic_string<CharT, Traits, Allocator> operator +(const std::basic_string<CharT, Traits, Allocator> &a, const basic_string_view<CharT, Traits> &b) {
+    std::basic_string<CharT, Traits, Allocator> ret = a;
+    ret.append(b.begin(), b.end());
+    return ret;
+}
+
+template <typename CharT, typename Traits, typename Allocator>
+std::basic_string<CharT, Traits, Allocator> operator +(const basic_string_view<CharT, Traits> &a, const std::basic_string<CharT, Traits, Allocator> &b) {
+    return static_cast<std::basic_string<CharT, Traits, Allocator> >(a) + b;
+}
 
 namespace std {
     template <typename CharT, typename Traits>

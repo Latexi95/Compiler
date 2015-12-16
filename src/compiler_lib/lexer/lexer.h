@@ -11,9 +11,10 @@ class error_producer;
 class lexer
 {
 public:
-    lexer(const code &c);
+    lexer(code &c);
+    ~lexer();
 
-    bool parse();
+    bool tokenize();
 
     const std::vector<token> &tokens() { return _tokens; }
 
@@ -22,6 +23,7 @@ private:
     static bool is_space(char c);
     static bool is_alpha(char c);
     static bool is_number(char c);
+    static bool is_hex(char c);
     
     token_type is_keyword(code_point start, code_point end);
 
@@ -31,16 +33,18 @@ private:
     bool handle_operators();
     bool handle_comments();
     bool handle_identifiers();
+    bool handle_string_literals();
+    bool handle_numbers();
 
-    char ca(code_point offset = 0);
+    char ch(code_point offset = 0);
     char next_rc();
-    char next_r();
+    char next();
 
-    const code &_c;
+    code &_c;
     std::unique_ptr<lexer_error_producer> _err;
     std::vector<token> _tokens;
     code_point _cp;
-    bool fatal_error;
+    bool _fatal_error;
 };
 
 #endif // LEXER_H
