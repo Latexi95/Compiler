@@ -25,7 +25,7 @@ class ast_base {
 
 
 private:
-    std::unique_ptr<ast_allocator> _allocator;
+    std::unique_ptr<allocator> _allocator;
 };
 
 

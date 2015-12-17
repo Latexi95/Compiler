@@ -7,7 +7,7 @@
 compilation_unit::compilation_unit(const std::string &file_name) :
     _code(new code(file_name)),
     _lexer(new lexer(*_code)),
-    _parser(new parser())
+	_parser(new parser(*_code))
 {
 
 }
