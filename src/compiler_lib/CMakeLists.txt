@@ -1,4 +1,4 @@
-file(GLOB SRC "*.h" "*.cpp" "common/*.h" "common/*.cpp" "lexer/*.h" "lexer/*.cpp" "parser/*.h" "parser/*.cpp")
+file(GLOB SRC "*.h" "*.cpp" "common/*.h" "common/*.cpp" "lexer/*.h" "lexer/*.cpp" "parser/*.h" "parser/*.cpp" "ast/*.h" "ast/*.cpp" "parse_tree/*.h" "parse_tree/*.cpp")
 
 set(Boost_USE_STATIC_LIBS    ON)
 set(Boost_USE_MULTITHREADED  ON)

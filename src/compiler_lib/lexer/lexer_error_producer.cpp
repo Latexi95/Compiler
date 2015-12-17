@@ -49,3 +49,10 @@ void lexer_error_producer::invalid_number_literal_unexpected_char(code_point cp,
           (boost::format("Invalid number literal. Unexpected character '%1%'") % unexpected).str());
 }
 
+void lexer_error_producer::unexpected_character(code_point cp, char character)
+{
+    error(error_code::unexpected_character,
+          _code.info(cp),
+          (boost::format("Unexpected character '%1%'") % character).str());
+}
+

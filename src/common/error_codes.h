@@ -8,6 +8,8 @@ enum class error_code {
     missing_ending_of_string_literal,
     invalid_string_literal_escape_sequence,
     invalid_number_literal,
+
+    unexpected_character,
     //Parser error codes
 };
 

@@ -28,6 +28,9 @@ bool lexer::tokenize()
         if (handle_string_literals()) continue;
         if (handle_identifiers()) continue;
         if (handle_numbers()) continue;
+
+        _err->unexpected_character(_cp, ch());
+        break;
     }
     return _err->error_count() == 0;
 }

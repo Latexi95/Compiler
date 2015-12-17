@@ -13,6 +13,8 @@ public:
     void missing_ending_of_string_literal(code_point cp, code_point start);
     void invalid_string_literal_escape_sequence(code_point cp, const std::string &sequence);
     void invalid_number_literal_unexpected_char(code_point cp, char unexpected);
+
+    void unexpected_character(code_point cp, char character);
 private:
     const code &_code;
 };
