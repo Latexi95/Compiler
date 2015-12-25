@@ -57,7 +57,8 @@ static const char * const token_names[] = {
 
     "t_dollar",
     "t_at",                   //@
-    "t_backslash",            // \
+    "t_backslash",            // \ .
+    "t_dot_dot",
 
 
     "t_brace_left",

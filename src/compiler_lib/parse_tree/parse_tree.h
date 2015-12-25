@@ -12,6 +12,26 @@ enum class node_type {
     expr,
     operation,
     unary_expr,
+    as_cast_expr,
+
+
+    base_tree,
+    block,
+
+    for_stmt,
+    while_stmt,
+    do_while_stmt,
+    use_stmt,
+    use_alias_stmt,
+
+    fn_decl,
+    struct_decl,
+    trait_decl,
+    variable_decl,
+    impl_decl,
+
+
+    attribute,
 
     u8_string_literal,
     u16_string_literal,
@@ -19,8 +39,12 @@ enum class node_type {
     ascii_string_literal,
     integer_literal,
     float_literal,
-
+    identifier
 };
+
+#define DEF_CHILD_NODE(_name_, _index_) \
+    node *_name_ () const { return child_node(_index_); } \
+    void set_ ## _name_ (node *n) { set_child_node(_index_, n); }
 
 class node {
 public:
@@ -124,6 +148,7 @@ class ascii_string_literal : public literal<string_view, node_type::ascii_string
 class float_literal : public literal<double, node_type::float_literal> {};
 class integer_literal : public literal<int128_t, node_type::integer_literal> {};
 
+class identifier : public literal<string_view, node_type::identifier> {};
 
 class unary_expr : public branch_node<unary_expr, 1, node_type::unary_expr> {
 public:
@@ -170,6 +195,133 @@ public:
 private:
     std::vector<node*> _child_nodes;
 };
+
+class attribute : public branch_node<attribute, 2, node_type::attribute> {
+public:
+    attribute(code_point cp);
+    ~attribute();
+
+    DEF_CHILD_NODE(identifier, 0)
+    DEF_CHILD_NODE(param_list, 1)
+};
+
+class as_cast_expr : public branch_node<as_cast_expr, 2, node_type::as_cast_expr> {
+public:
+    as_cast_expr(code_point cp);
+    ~as_cast_expr();
+
+    DEF_CHILD_NODE(operand, 0)
+    DEF_CHILD_NODE(target_type, 1)
+};
+
+
+class block : public variable_branch_node<block, node_type::block> {
+public:
+    block(code_point cp_start, code_point cp_end);
+    ~block();
+
+    virtual node *child_node(int i) const {
+        assert(i >= 0 && i <= _child_nodes.size());
+        return _child_nodes[i];
+    }
+    virtual void set_child_node(int i, node *n) {
+        assert(i >= 0 && i <= _child_nodes.size());
+        _child_nodes[i] = n;
+    }
+    virtual int child_node_count() const { return _child_nodes.size(); }
+protected:
+    std::vector<node*> _child_nodes;
+};
+
+class use_stmt : public branch_node<use_stmt, 2, node_type::use_stmt> {
+public:
+    use_stmt(code_point cp);
+    ~use_stmt();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(param, 1)
+};
+
+class use_alias_stmt : public branch_node<use_alias_stmt, 3, node_type::use_alias_stmt> {
+public:
+    use_alias_stmt(code_point cp_start, code_point cp_as);
+    ~use_alias_stmt();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(source, 1)
+    DEF_CHILD_NODE(identifier, 2)
+
+};
+
+class while_stmt : public branch_node<while_stmt, 3, node_type::while_stmt> {
+public:
+    while_stmt(code_point cp_start, code_point cp_end);
+    ~while_stmt();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(condition, 1)
+    DEF_CHILD_NODE(block, 2)
+};
+
+class do_while_stmt : public branch_node<do_while_stmt, 3, node_type::do_while_stmt> {
+public:
+    do_while_stmt(code_point cp_start, code_point cp_end);
+    ~do_while_stmt();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(block, 1)
+    DEF_CHILD_NODE(condition, 2)
+};
+
+class for_stmt : public branch_node<for_stmt, 4, node_type::for_stmt> {
+public:
+    do_while_stmt(code_point cp_start, code_point cp_end);
+    ~do_while_stmt();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(variable, 1)
+    DEF_CHILD_NODE(range, 2)
+    DEF_CHILD_NODE(block, 3)
+};
+
+
+class fn_decl : public branch_node<fn_decl, 6, node_type::fn_decl> {
+public:
+    fn_decl(code_point cp_start, code_point cp_end);
+    ~fn_decl();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(identifier, 1)
+    DEF_CHILD_NODE(template_param_list, 2)
+    DEF_CHILD_NODE(param_list, 3)
+    DEF_CHILD_NODE(ret_type, 4)
+    DEF_CHILD_NODE(block, 5)
+};
+
+class struct_decl : public branch_node<struct_decl, 4, node_type::struct_decl> {
+public:
+    struct_decl(code_point start_cp, code_point end_cp);
+    ~struct_decl();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(identifier, 1)
+    DEF_CHILD_NODE(template_param_list, 2)
+    DEF_CHILD_NODE(variable_decls, 3)
+};
+
+class trait_decl : public branch_node<trait_decl, 5, node_type::trait_decl> {
+    trait_decl(code_point start_cp, code_point end_cp);
+    ~trait_decl();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(template_param_list, 2)
+
+    DEF_CHILD_NODE(identifier, 1)
+
+    DEF_CHILD_NODE(fn_decls, 3)
+    DEF_CHILD_NODE(use_stmts, 4)
+};
+
 
 }
 

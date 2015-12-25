@@ -59,7 +59,8 @@ enum class token_type {
 
     t_dollar,
     t_at,                   //@
-    t_backslash,            //   \
+    t_backslash,            //
+    t_dot_dot,
 
 
     t_brace_left,

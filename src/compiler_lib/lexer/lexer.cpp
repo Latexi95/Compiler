@@ -190,6 +190,7 @@ bool lexer::handle_operators()
         OP(t_dollar, "$"),
         OP(t_at, "@"),                   //@
         OP(t_backslash, "\\"),
+        OP(t_dot_dot, ".."),
 
 
         OP(t_brace_left, "{"),
