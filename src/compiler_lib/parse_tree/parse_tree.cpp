@@ -32,12 +32,55 @@ as_cast_expr::as_cast_expr(code_point cp) :
 
 as_cast_expr::~as_cast_expr() {}
 
+
+basic_type::basic_type(code_point cp) :
+    branch_node<basic_type, 2, node_type::basic_type>(cp, cp)
+{ }
+
+basic_type::~basic_type()
+{ }
+
+template_type::template_type(code_point cp) :
+    branch_node<template_type, 3, node_type::template_type>(cp, cp)
+{ }
+
+template_type::~template_type()
+{ }
+
+tuple_type::tuple_type(code_point cp_start, code_point cp_end) :
+    variable_branch_node<tuple_type, node_type::tuple_type>(cp_start, cp_end)
+{ }
+
+tuple_type::~tuple_type() { }
+
+void tuple_type::append_child(node *n)
+{
+    _child_nodes.push_back(n);
+}
+
+function_type::function_type(code_point cp) :
+    branch_node<function_type, 3, node_type::function_type>(cp, cp)
+{ }
+
+function_type::~function_type()
+{ }
+
+
+
 block::block(code_point cp_start, code_point cp_end) :
     variable_branch_node<block, node_type::block>(cp_start, cp_end)
-{}
+{
+    _child_nodes.reserve(3);
+    _child_nodes.resize(1);
+}
 
 block::~block()
 { }
+
+void block::append_child(node *n)
+{
+    _child_nodes.push_back(n);
+}
 
 attribute::attribute(code_point cp) :
     branch_node<attribute, 2, node_type::attribute>(cp, cp)
@@ -88,13 +131,46 @@ fn_decl::fn_decl(code_point cp_start, code_point cp_end) :
 fn_decl::~fn_decl() { }
 
 struct_decl::struct_decl(code_point start_cp, code_point end_cp) :
-    branch_node<trait_decl, 4, node_type::trait_decl> (start_cp, end_cp)
+    branch_node<struct_decl, 4, node_type::struct_decl> (start_cp, end_cp)
 { }
 
 struct_decl::~struct_decl() { }
 
 trait_decl::trait_decl(code_point start_cp, code_point end_cp) :
-    branch_node<trait_decl, 5, node_type::trait_decl>(start_cp, end_cp)
+    branch_node<trait_decl, 4, node_type::trait_decl>(start_cp, end_cp)
 { }
 
 trait_decl::~trait_decl() { }
+
+impl_trait_decl::impl_trait_decl(code_point start_cp, code_point end_cp) :
+    branch_node<impl_trait_decl, 5, node_type::impl_trait_decl>(start_cp, end_cp)
+{ }
+
+impl_trait_decl::~impl_trait_decl() { }
+
+impl_decl::impl_decl(code_point start_cp, code_point end_cp) :
+    branch_node<impl_decl, 3, node_type::impl_decl>(start_cp, end_cp)
+{ }
+
+impl_decl::~impl_decl() { }
+
+
+
+
+
+for_stmt::for_stmt(code_point cp_start, code_point cp_end) :
+    branch_node<for_stmt, 4, node_type::for_stmt>(cp_start, cp_end)
+{ }
+
+for_stmt::~for_stmt() { }
+
+scoped_identifier::scoped_identifier(code_point cp_start, code_point cp_end) :
+    variable_branch_node<scoped_identifier, node_type::scoped_identifier>(cp_start, cp_end)
+{ }
+
+scoped_identifier::~scoped_identifier() { }
+
+void scoped_identifier::append_child(node *n)
+{
+    _child_nodes.push_back(n);
+}

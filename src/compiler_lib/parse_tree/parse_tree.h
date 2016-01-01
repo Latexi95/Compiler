@@ -29,6 +29,25 @@ enum class node_type {
     trait_decl,
     variable_decl,
     impl_decl,
+    impl_trait_decl,
+
+    module_decl,
+    namespace_decl,
+
+
+
+
+
+    basic_type,
+    template_type,
+    tuple_type,
+    function_type,
+    array_type,
+    splice_type,
+    owned_ptr_type,
+    raw_ptr_type,
+    ref_type,
+    ref_ref_type,
 
 
     attribute,
@@ -39,12 +58,13 @@ enum class node_type {
     ascii_string_literal,
     integer_literal,
     float_literal,
-    identifier
+    identifier,
+    scoped_identifier,
 };
 
 #define DEF_CHILD_NODE(_name_, _index_) \
-    node *_name_ () const { return child_node(_index_); } \
-    void set_ ## _name_ (node *n) { set_child_node(_index_, n); }
+    node *_name_ () const { return this->child_node(_index_); } \
+    void set_ ## _name_ (node *n) { this->set_child_node(_index_, n); }
 
 class node {
 public:
@@ -94,7 +114,7 @@ class variable_branch_node : public node{
 public:
     static const node_type static_type = TYPE;
     variable_branch_node(code_point start_cp, code_point end_cp) : _start_cp(start_cp), _end_cp(end_cp) {}
-    ~variable_branch_node() {}
+    virtual ~variable_branch_node() {}
 
     virtual node_type type() const { return TYPE; }
 
@@ -113,7 +133,7 @@ public:
     branch_node(code_point start_cp, code_point end_cp) :
         variable_branch_node<T, TYPE>(start_cp, end_cp)
     {std::fill(_child_nodes, _child_nodes + CHILD_NODE_COUNT, nullptr);}
-    ~branch_node() {}
+    virtual ~branch_node() {}
 
     virtual node *child_node(int i) const {
         assert(i >= 0 && i <= CHILD_NODE_COUNT);
@@ -130,7 +150,7 @@ template <typename T, node_type TYPE>
 class literal : public branch_node<literal<T, TYPE>, 1, TYPE>{
 public:
     literal(code_point cp) : branch_node<literal<T, TYPE>, 1, TYPE>(cp) {}
-    ~literal() {}
+    virtual ~literal() {}
 
     void set_value(T &&v) { _value = v; }
     T value() const { return _value; }
@@ -149,6 +169,28 @@ class float_literal : public literal<double, node_type::float_literal> {};
 class integer_literal : public literal<int128_t, node_type::integer_literal> {};
 
 class identifier : public literal<string_view, node_type::identifier> {};
+
+class scoped_identifier : public variable_branch_node<scoped_identifier, node_type::scoped_identifier> {
+public:
+    scoped_identifier(code_point cp_start, code_point cp_end);
+    ~scoped_identifier();
+
+    virtual node *child_node(int i) const {
+        assert(i >= 0 && i <= _child_nodes.size());
+        return _child_nodes[i];
+    }
+    virtual void set_child_node(int i, node *n) {
+        assert(i >= 0 && i <= _child_nodes.size());
+        _child_nodes[i] = n;
+    }
+    virtual int child_node_count() const { return _child_nodes.size(); }
+
+    void append_child(node *n);
+
+protected:
+    std::vector<node*> _child_nodes;
+};
+
 
 class unary_expr : public branch_node<unary_expr, 1, node_type::unary_expr> {
 public:
@@ -201,7 +243,7 @@ public:
     attribute(code_point cp);
     ~attribute();
 
-    DEF_CHILD_NODE(identifier, 0)
+    DEF_CHILD_NODE(id, 0)
     DEF_CHILD_NODE(param_list, 1)
 };
 
@@ -213,6 +255,81 @@ public:
     DEF_CHILD_NODE(operand, 0)
     DEF_CHILD_NODE(target_type, 1)
 };
+
+/*  basic_type,
+    template_type,
+    tuple_type,
+    function_type,
+    array_type,
+    splice_type,
+    owned_ptr_type,
+    raw_ptr_type,
+    ref_type,
+    ref_ref_type,*/
+
+
+
+class basic_type : public branch_node<basic_type, 2, node_type::basic_type> {
+public:
+    basic_type(code_point cp);
+    ~basic_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(id, 1)
+};
+
+class template_type : public branch_node<template_type, 3, node_type::template_type> {
+public:
+    template_type(code_point cp);
+    ~template_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(identifier, 1)
+    DEF_CHILD_NODE(template_params, 2)
+};
+
+class tuple_type : public variable_branch_node<tuple_type, node_type::tuple_type> {
+    tuple_type(code_point cp_start, code_point cp_end);
+    ~tuple_type();
+
+    virtual node *child_node(int i) const {
+        assert(i >= 0 && i <= _child_nodes.size());
+        return _child_nodes[i];
+    }
+    virtual void set_child_node(int i, node *n) {
+        assert(i >= 0 && i <= _child_nodes.size());
+        _child_nodes[i] = n;
+    }
+    virtual int child_node_count() const { return _child_nodes.size(); }
+
+    void append_child(node *n);
+
+
+    DEF_CHILD_NODE(attribute, 0)
+protected:
+    std::vector<node*> _child_nodes;
+};
+
+
+class function_type : public branch_node<function_type, 3, node_type::function_type> {
+public:
+    function_type(code_point cp);
+    ~function_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(param_list, 1)
+    DEF_CHILD_NODE(return_type, 2)
+};
+
+class array_type : public branch_node<array_type, 3, node_type::array_type> {
+    array_type(code_point cp);
+    ~array_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(base_type, 1)
+    DEF_CHILD_NODE(dimension_list, 2)
+};
+
 
 
 class block : public variable_branch_node<block, node_type::block> {
@@ -229,6 +346,10 @@ public:
         _child_nodes[i] = n;
     }
     virtual int child_node_count() const { return _child_nodes.size(); }
+
+    void append_child(node *n);
+
+    DEF_CHILD_NODE(attribute, 0)
 protected:
     std::vector<node*> _child_nodes;
 };
@@ -249,7 +370,7 @@ public:
 
     DEF_CHILD_NODE(attribute, 0)
     DEF_CHILD_NODE(source, 1)
-    DEF_CHILD_NODE(identifier, 2)
+    DEF_CHILD_NODE(id, 2)
 
 };
 
@@ -275,8 +396,8 @@ public:
 
 class for_stmt : public branch_node<for_stmt, 4, node_type::for_stmt> {
 public:
-    do_while_stmt(code_point cp_start, code_point cp_end);
-    ~do_while_stmt();
+    for_stmt(code_point cp_start, code_point cp_end);
+    ~for_stmt();
 
     DEF_CHILD_NODE(attribute, 0)
     DEF_CHILD_NODE(variable, 1)
@@ -291,7 +412,7 @@ public:
     ~fn_decl();
 
     DEF_CHILD_NODE(attribute, 0)
-    DEF_CHILD_NODE(identifier, 1)
+    DEF_CHILD_NODE(id, 1)
     DEF_CHILD_NODE(template_param_list, 2)
     DEF_CHILD_NODE(param_list, 3)
     DEF_CHILD_NODE(ret_type, 4)
@@ -304,24 +425,41 @@ public:
     ~struct_decl();
 
     DEF_CHILD_NODE(attribute, 0)
-    DEF_CHILD_NODE(identifier, 1)
+    DEF_CHILD_NODE(id, 1)
     DEF_CHILD_NODE(template_param_list, 2)
     DEF_CHILD_NODE(variable_decls, 3)
 };
 
-class trait_decl : public branch_node<trait_decl, 5, node_type::trait_decl> {
+class trait_decl : public branch_node<trait_decl, 4, node_type::trait_decl> {
     trait_decl(code_point start_cp, code_point end_cp);
     ~trait_decl();
 
     DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(id, 1)
     DEF_CHILD_NODE(template_param_list, 2)
-
-    DEF_CHILD_NODE(identifier, 1)
-
-    DEF_CHILD_NODE(fn_decls, 3)
-    DEF_CHILD_NODE(use_stmts, 4)
+    DEF_CHILD_NODE(block, 3)
 };
 
+class impl_trait_decl : public branch_node<impl_trait_decl, 5, node_type::impl_trait_decl> {
+    impl_trait_decl(code_point start_cp, code_point end_cp);
+    ~impl_trait_decl();
 
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(template_param_list, 1)
+    DEF_CHILD_NODE(trait, 2)
+    DEF_CHILD_NODE(struct_type, 3)
+    DEF_CHILD_NODE(block, 4)
+};
+
+class impl_decl : public branch_node<impl_decl, 3, node_type::impl_decl> {
+    impl_decl(code_point start_cp, code_point end_cp);
+    ~impl_decl();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(struct_type, 1)
+    DEF_CHILD_NODE(block, 2)
+};
+
+#undef DEF_CHILD_NODE
 }
 

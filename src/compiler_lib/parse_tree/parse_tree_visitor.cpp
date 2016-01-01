@@ -3,7 +3,7 @@
 
 #define VISIT_IMPL(_class_) void visitor::visit(_class_ *n) {\
         for (int i = 0; i < n->child_node_count(); ++i) { \
-            n->child_node(i)->accept(this); \
+            if (n->child_node(i)) n->child_node(i)->accept(this); \
         } \
     }
 
