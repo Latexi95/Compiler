@@ -70,7 +70,6 @@ token_type lexer::is_keyword(code_point start, code_point end)
         {"while"_sv, token_type::k_while},
         {"do", token_type::k_do},
         {"namespace", token_type::k_namespace},
-        {"var", token_type::k_var},
         {"mut", token_type::k_mut},
         {"match", token_type::k_match},
         {"enum"_sv, token_type::k_enum},
@@ -144,8 +143,9 @@ bool lexer::handle_operators()
         OP(t_xor, "^"),
 
         OP(t_comma, ","),
-        OP(t_colon, ":"),
         OP(t_colon_colon, "::"),
+        OP(t_colon_assign, ":="),
+        OP(t_colon, ":"),
         OP(t_semicolon, ";"),
 
         OP(t_divide_assign, "/="),
@@ -155,15 +155,18 @@ bool lexer::handle_operators()
         OP(t_dot_ellipsis, ".~"),
         OP(t_dot, "."),
 
-        OP(t_greater, ">"),
         OP(t_greater_equal, ">="),
+        OP(t_greater, ">"),
+
+        OP(t_less_equal, "<="),
+        OP(t_less, "<"),
 
         OP(t_minus_assign, "-="),
         OP(t_minus_minus, "--"),
         OP(t_minus, "-"),
 
-        OP(t_percent, "%"),
         OP(t_percent_assign, "%="),
+        OP(t_percent, "%"),
 
         OP(t_not_equal, "!="),
         OP(t_not, "!"),
@@ -181,14 +184,15 @@ bool lexer::handle_operators()
         OP(t_shift_right, ">>"),
 
         OP(t_star, "*"),
-        OP(t_complement, "~"),           //~
-        OP(t_star_assign, "*="),          // *=
-        OP(t_pound,  "#"),               //#
-        OP(t_pound_pound, "##"),          //##
+        OP(t_complement, "~"),
+        OP(t_star_assign, "*="),
+
+        OP(t_pound_pound, "##"),
+        OP(t_pound,  "#"),
 
 
         OP(t_dollar, "$"),
-        OP(t_at, "@"),                   //@
+        OP(t_at, "@"),
         OP(t_backslash, "\\"),
         OP(t_dot_dot, ".."),
 
@@ -363,6 +367,7 @@ bool lexer::handle_string_literals()
         std::string literal;
         char c = '\0';
         bool escape = false;
+        bool inline_string_escape = false;
         while ((c = next()) && (c != '"' || escape)) {
             if (escape) {
                 switch (c) {
@@ -389,6 +394,14 @@ bool lexer::handle_string_literals()
                     }
                     break;
                 }
+                case '{':
+                    literal += '{';
+                    break;
+                default:
+                    _err->ignored_string_literal_escape_sequence(_cp - 1, c);
+                    literal += '\\';
+                    literal += c;
+                    break;
                 }
                 escape = false;
             }
@@ -397,6 +410,24 @@ bool lexer::handle_string_literals()
             }
             else {
                 literal += c;
+            }
+
+            //Handle inline string expression {{expr}}
+            if (inline_string_escape && c == '{') {
+                add_token(token_type::t_string_inline_expr_start, _cp - 1, _cp + 1);
+                skip(1);
+                if (!tokenize_inline_string_expr()) {
+                    if (_fatal_error)
+                        return true;
+                    continue;
+                }
+                inline_string_escape = false;
+            }
+            else if (c == '{') {
+                inline_string_escape = true;
+            }
+            else {
+                inline_string_escape = false;
             }
         }
 
@@ -478,6 +509,42 @@ bool lexer::handle_numbers()
         add_token(number_type, number_start, number_end);
         return true;
     }
+    return false;
+}
+
+bool lexer::tokenize_inline_string_expr()
+{
+    size_t brace_depth = 0;
+    while (ch() != '\0' && !_fatal_error) {
+        if (ch() == '}' && ch(1) == '}}' && brace_depth == 0) {
+            add_token(token_type::t_string_inline_expr_end, _cp, _cp + 2);
+            return true;
+        }
+
+        if (skip_spaces()) continue;
+        if (handle_comments()) continue;
+        if (handle_operators()) {
+            switch (_c.tokens().back().type()) {
+            case token_type::t_brace_left:
+                ++brace_depth; break;
+            case token_type::t_brace_right:
+                --brace_depth; break;
+            default:
+                break;
+            }
+
+
+            continue;
+        }
+        if (handle_string_literals()) continue;
+        if (handle_identifiers()) continue;
+        if (handle_numbers()) continue;
+
+        _err->unexpected_character(_cp, ch());
+        _fatal_error = true;
+        break;
+    }
+
     return false;
 }
 

@@ -56,3 +56,10 @@ void lexer_error_producer::unexpected_character(code_point cp, char character)
           (boost::format("Unexpected character '%1%'") % character).str());
 }
 
+void lexer_error_producer::ignored_string_literal_escape_sequence(code_point cp, char escape_char)
+{
+    warning(warning_code::ignored_string_literal_escape_sequence,
+            _code.info(cp),
+            std::string("Ignored string literal escape sequence '\\") + escape_char + "'");
+}
+

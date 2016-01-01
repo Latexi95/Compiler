@@ -6,7 +6,7 @@ struct test {
 }
 
 impl test {
-	fn string print_me() {
+	fn print_me() string {
 		//Ordinary comment
 		return "hello world\n";
 	}

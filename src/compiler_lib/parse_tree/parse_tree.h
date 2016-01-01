@@ -5,6 +5,8 @@
 #include <cassert>
 #include "../common/operators.h"
 #include <boost/multiprecision/cpp_int.hpp>
+#include "parse_tree_allocator.h"
+#include "../common/object_construct_builder.h"
 
 using boost::multiprecision::int128_t;
 namespace parse_tree {
@@ -14,7 +16,6 @@ enum class node_type {
     unary_expr,
     as_cast_expr,
 
-
     base_tree,
     block,
 
@@ -23,6 +24,8 @@ enum class node_type {
     do_while_stmt,
     use_stmt,
     use_alias_stmt,
+    import_stmt,
+
 
     fn_decl,
     struct_decl,
@@ -33,10 +36,6 @@ enum class node_type {
 
     module_decl,
     namespace_decl,
-
-
-
-
 
     basic_type,
     template_type,
@@ -60,6 +59,7 @@ enum class node_type {
     float_literal,
     identifier,
     scoped_identifier,
+    wildcarded_identifier,
 };
 
 #define DEF_CHILD_NODE(_name_, _index_) \
@@ -169,6 +169,21 @@ class float_literal : public literal<double, node_type::float_literal> {};
 class integer_literal : public literal<int128_t, node_type::integer_literal> {};
 
 class identifier : public literal<string_view, node_type::identifier> {};
+
+class wildcarded_identifier : public literal<string_view, node_type::wildcarded_identifier> {
+public:
+    enum wildcard_type {
+        wildcard_begin,
+        wildcard_end,
+        wildcard_begin_and_end,
+        wildcard_any
+    };
+
+    wildcard_type wildcard() const { return _wildcard_type; }
+    void set_wildcard(wildcard_type t) { _wildcard_type = t; }
+protected:
+    wildcard_type _wildcard_type;
+};
 
 class scoped_identifier : public variable_branch_node<scoped_identifier, node_type::scoped_identifier> {
 public:
@@ -289,6 +304,7 @@ public:
 };
 
 class tuple_type : public variable_branch_node<tuple_type, node_type::tuple_type> {
+public:
     tuple_type(code_point cp_start, code_point cp_end);
     ~tuple_type();
 
@@ -374,6 +390,16 @@ public:
 
 };
 
+class import_stmt : public branch_node<import_stmt, 3, node_type::import_stmt> {
+public:
+    import_stmt(code_point cp);
+    ~import_stmt();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(import_identifier, 1)
+    DEF_CHILD_NODE(alias_identifier, 2)
+};
+
 class while_stmt : public branch_node<while_stmt, 3, node_type::while_stmt> {
 public:
     while_stmt(code_point cp_start, code_point cp_end);
@@ -431,6 +457,7 @@ public:
 };
 
 class trait_decl : public branch_node<trait_decl, 4, node_type::trait_decl> {
+public:
     trait_decl(code_point start_cp, code_point end_cp);
     ~trait_decl();
 
@@ -440,7 +467,18 @@ class trait_decl : public branch_node<trait_decl, 4, node_type::trait_decl> {
     DEF_CHILD_NODE(block, 3)
 };
 
+class variable_decl : public branch_node<variable_decl, 3, node_type::variable_decl> {
+public:
+    variable_decl(code_point cp);
+    ~variable_decl();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(id, 1)
+    DEF_CHILD_NODE(data_type, 2)
+};
+
 class impl_trait_decl : public branch_node<impl_trait_decl, 5, node_type::impl_trait_decl> {
+public:
     impl_trait_decl(code_point start_cp, code_point end_cp);
     ~impl_trait_decl();
 
@@ -452,12 +490,52 @@ class impl_trait_decl : public branch_node<impl_trait_decl, 5, node_type::impl_t
 };
 
 class impl_decl : public branch_node<impl_decl, 3, node_type::impl_decl> {
+public:
     impl_decl(code_point start_cp, code_point end_cp);
     ~impl_decl();
 
     DEF_CHILD_NODE(attribute, 0)
     DEF_CHILD_NODE(struct_type, 1)
     DEF_CHILD_NODE(block, 2)
+};
+
+class module_decl : public branch_node<module_decl, 2, node_type::module_decl> {
+public:
+    module_decl(code_point cp);
+    ~module_decl();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(id, 1)
+};
+
+class namespace_decl : public branch_node<namespace_decl, 3, node_type::namespace_decl> {
+public:
+    namespace_decl(code_point start_cp, code_point end_cp);
+    ~namespace_decl();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(id, 1)
+    DEF_CHILD_NODE(block, 2)
+};
+
+
+class base_tree : public branch_node<base_tree, 2, node_type::impl_decl> {
+    base_tree(code_point start_cp, code_point end_cp);
+    ~base_tree();
+
+    DEF_CHILD_NODE(module_declaration, 0)
+    DEF_CHILD_NODE(main_block, 1)
+
+    allocator &alloc() { return _allocator; }
+
+    template <typename T>
+    object_construct_builder<T> new_node() {
+        T *a = _allocator.allocate(sizeof(T));
+        return object_construct_builder<T>(a);
+    }
+
+protected:
+    allocator _allocator;
 };
 
 #undef DEF_CHILD_NODE

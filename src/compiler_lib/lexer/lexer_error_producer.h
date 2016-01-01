@@ -15,6 +15,9 @@ public:
     void invalid_number_literal_unexpected_char(code_point cp, char unexpected);
 
     void unexpected_character(code_point cp, char character);
+
+    //Warnings
+    void ignored_string_literal_escape_sequence(code_point cp, char escape_char);
 private:
     const code &_code;
 };

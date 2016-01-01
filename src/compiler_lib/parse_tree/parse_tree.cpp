@@ -17,14 +17,12 @@ void expr::set_operations(const std::vector<node *> &operations)
 unary_expr::unary_expr(code_point cp) :
     branch_node<unary_expr, 1, node_type::unary_expr>(cp, cp),
     _operator(unary_oper::invalid)
-{}
+{ }
 
 operation::operation(code_point cp) :
     branch_node<operation, 1, node_type::operation>(cp, cp),
     _operator(oper::invalid)
-{
-
-}
+{ }
 
 as_cast_expr::as_cast_expr(code_point cp) :
     branch_node<as_cast_expr, 2, node_type::as_cast_expr>(cp, cp)
@@ -142,6 +140,13 @@ trait_decl::trait_decl(code_point start_cp, code_point end_cp) :
 
 trait_decl::~trait_decl() { }
 
+variable_decl::variable_decl(code_point cp) :
+    branch_node<variable_decl, 3, node_type::variable_decl>(cp, cp)
+{ }
+
+variable_decl::~variable_decl() { }
+
+
 impl_trait_decl::impl_trait_decl(code_point start_cp, code_point end_cp) :
     branch_node<impl_trait_decl, 5, node_type::impl_trait_decl>(start_cp, end_cp)
 { }
@@ -153,9 +158,6 @@ impl_decl::impl_decl(code_point start_cp, code_point end_cp) :
 { }
 
 impl_decl::~impl_decl() { }
-
-
-
 
 
 for_stmt::for_stmt(code_point cp_start, code_point cp_end) :
@@ -174,3 +176,28 @@ void scoped_identifier::append_child(node *n)
 {
     _child_nodes.push_back(n);
 }
+
+base_tree::base_tree(code_point start_cp, code_point end_cp) :
+    branch_node<base_tree, 2, node_type::impl_decl>(start_cp, end_cp)
+{ }
+
+base_tree::~base_tree() { }
+
+module_decl::module_decl(code_point cp) :
+    branch_node<module_decl, 2, node_type::module_decl>(cp, cp)
+{ }
+
+module_decl::~module_decl() { }
+
+namespace_decl::namespace_decl(code_point start_cp, code_point end_cp) :
+    branch_node<namespace_decl, 3, node_type::namespace_decl> (start_cp, end_cp)
+{ }
+
+namespace_decl::~namespace_decl() { }
+
+
+import_stmt::import_stmt(code_point cp) :
+    branch_node<import_stmt, 3, node_type::import_stmt>(cp, cp)
+{ }
+
+import_stmt::~import_stmt() { }

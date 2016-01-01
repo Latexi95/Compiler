@@ -1,0 +1,36 @@
+STRINGS
+
+UTF-8 is default encoding. Specialized string types for utf-16, utf-32 and ascii encoded strings.
+
+Char types:
+	char32 == utf-32 character == u32
+	char == 7-bit ascii character
+	no types for utf-8 and utf-16 characters because they contain surrogate characters.
+		=> use string types instead or char32
+	
+Traits:
+	- Container
+		- Contains code points
+		- size
+	- 
+
+1. String references
+	- Traits for handling references to constant and mutable strings
+	- Won't hold ownership
+	- StringRef == String8Ref, String16Ref, String32Ref, StringARef
+	- MutStringRef, ...
+	- Mutable string references provide means to modify underlying string data
+	- Compiler should provide some support to detect dangling pointers in string references?
+
+2. String structs
+	- String == String8 , String16, String32, StringA
+	- small-string optimized string classes
+	- struct String8 {
+		data : u8*!;
+		capacity : usize;
+		length : usize;
+	}
+	- separate access to raw data and iterating characters (code points, logical characters, combined characters)
+	- traits to manipulate strings in place and by generating a copy
+	- implicit conversion to string references?
+	

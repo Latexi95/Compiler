@@ -19,6 +19,9 @@ lexer_tester::lexer_tester()
     token_name_map[")"] = token_type::t_paren_right;
     token_name_map["["] = token_type::t_bracket_left;
     token_name_map["]"] = token_type::t_bracket_right;
+    token_name_map[";"] = token_type::t_semicolon;
+    token_name_map[":"] = token_type::t_colon;
+    token_name_map[":="] = token_type::t_colon_assign;
 
 }
 

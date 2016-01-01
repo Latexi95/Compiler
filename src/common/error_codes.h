@@ -14,6 +14,6 @@ enum class error_code {
 };
 
 enum class warning_code {
-
+    ignored_string_literal_escape_sequence,
 };
 

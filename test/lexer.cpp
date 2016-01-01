@@ -68,7 +68,16 @@ BOOST_AUTO_TEST_CASE( lexer_simple_test ) {
 BOOST_AUTO_TEST_CASE ( automated_lexer_tests ) {
 
     lexer_tester tester;
-    bool success = tester.test(TEST_DIRECTORY "/lexer_test_data/basic.l", TEST_DIRECTORY "/lexer_test_data/basic.l.ref");
+    bool success = true;
 
+#define AUTOMATED_TEST(_file_) success &= tester.test(TEST_DIRECTORY _file_, TEST_DIRECTORY _file_ ".ref")
+
+    AUTOMATED_TEST("/lexer_test_data/basic.ly");
+    AUTOMATED_TEST("/lexer_test_data/string_inline_expression.ly");
+
+
+#undef AUTOMATED_TEST
+
+    BOOST_CHECK_MESSAGE(success, "All automated lexer tests didn't complete successfully");
     BOOST_CHECK_EQUAL(success, true);
 }

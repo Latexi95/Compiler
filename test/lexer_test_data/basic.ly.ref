@@ -6,7 +6,7 @@ t_identifier t_bracket_left t_integer_literal t_bracket_right t_identifier t_sem
 t_brace_right
 
 k_impl t_identifier t_brace_left
-k_fn t_identifier t_identifier t_paren_left t_paren_right t_brace_left
+k_fn t_identifier t_paren_left t_paren_right t_identifier t_brace_left
 
 k_return t_u8_string_literal t_semicolon
 t_brace_right

@@ -21,27 +21,44 @@ private:
         char data[0];
     };
 
-    block *last_block;
+    block *_last_block;
 };
+
+template <std::size_t BLOCK_SIZE>
+pool_allocator<BLOCK_SIZE>::pool_allocator() :
+    _last_block(0)
+{
+}
+
+template <std::size_t BLOCK_SIZE>
+pool_allocator<BLOCK_SIZE>::~pool_allocator()
+{
+    block *b = _last_block;
+    while (b) {
+        block *before = b->before;
+        delete[] (char*)b;
+        b = before;
+    }
+}
 
 template <std::size_t BLOCK_SIZE>
 void *pool_allocator<BLOCK_SIZE>::allocate(std::size_t s)
 {
     assert(s <= block_size);
-    if (!last_block || (block_size - last_block->used_size) < s) {
+    if (!_last_block || (block_size - _last_block->used_size) < s) {
         new_block();
     }
 
-    char *ret = last_block->data + last_block->used_size;
-    last_block->used_size += s;
+    char *ret = _last_block->data + _last_block->used_size;
+    _last_block->used_size += s;
     return ret;
 }
 
 template <std::size_t BLOCK_SIZE>
 void pool_allocator<BLOCK_SIZE>::deallocate(void *ptr, std::size_t s)
 {
-    if (last_block->data + last_block->used_size == ptr + s) {
-        last_block->used_size -= s;
+    if (_last_block->data + _last_block->used_size == ptr + s) {
+        _last_block->used_size -= s;
     }
 }
 
@@ -49,9 +66,9 @@ template <std::size_t BLOCK_SIZE>
 void pool_allocator<BLOCK_SIZE>::new_block()
 {
     block *b = (block*)new char[sizeof(block) + block_size];
-    b->before = last_block;
+    b->before = _last_block;
     b->used_size = 0;
-    last_block = b;
+    _last_block = b;
 }
 
 
