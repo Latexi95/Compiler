@@ -1,12 +1,10 @@
 #include "parse_tree.h"
 using namespace parse_tree;
 expr::expr(code_point cp) :
-    variable_branch_node<expr, node_type::expr>(cp, cp)
-{
-    _child_nodes.reserve(4);
-    _child_nodes.resize(1);
-    _child_nodes[0] = 0;
-}
+    list<expr, node_type::expr, 1>(cp, cp)
+{ }
+
+expr::~expr() { }
 
 void expr::set_operations(const std::vector<node *> &operations)
 {
@@ -30,6 +28,12 @@ as_cast_expr::as_cast_expr(code_point cp) :
 
 as_cast_expr::~as_cast_expr() {}
 
+value_list::value_list(code_point start_cp, code_point end_cp) :
+    list<value_list, node_type::value_list>(start_cp, end_cp)
+{ }
+
+value_list::~value_list() { }
+
 
 basic_type::basic_type(code_point cp) :
     branch_node<basic_type, 2, node_type::basic_type>(cp, cp)
@@ -46,73 +50,82 @@ template_type::~template_type()
 { }
 
 tuple_type::tuple_type(code_point cp_start, code_point cp_end) :
-    variable_branch_node<tuple_type, node_type::tuple_type>(cp_start, cp_end)
+    list<tuple_type, node_type::tuple_type, 1>(cp_start, cp_end)
 { }
 
 tuple_type::~tuple_type() { }
-
-void tuple_type::append_child(node *n)
-{
-    _child_nodes.push_back(n);
-}
 
 function_type::function_type(code_point cp) :
     branch_node<function_type, 3, node_type::function_type>(cp, cp)
 { }
 
-function_type::~function_type()
+function_type::~function_type() { }
+
+
+splice_type::splice_type(code_point cp) :
+    branch_node<splice_type, 2, node_type::array_type>(cp, cp)
 { }
+
+splice_type::~splice_type() { }
+
+owned_ptr_type::owned_ptr_type(code_point cp) :
+    branch_node<owned_ptr_type, 2, node_type::owned_ptr_type>(cp, cp)
+{ }
+
+owned_ptr_type::~owned_ptr_type() { }
+
+raw_ptr_type::raw_ptr_type(code_point cp) :
+    branch_node<raw_ptr_type, 2, node_type::raw_ptr_type>(cp, cp)
+{ }
+
+raw_ptr_type::~raw_ptr_type() { }
+
+ref_type::ref_type(code_point cp) :
+    branch_node<ref_type, 2, node_type::ref_type>(cp, cp)
+{ }
+
+ref_type::~ref_type() { }
+
+ref_ref_type::ref_ref_type(code_point cp) :
+    branch_node<ref_ref_type, 2, node_type::ref_ref_type>(cp, cp)
+{ }
+
+ref_ref_type::~ref_ref_type() { }
+
+
 
 
 
 block::block(code_point cp_start, code_point cp_end) :
-    variable_branch_node<block, node_type::block>(cp_start, cp_end)
+    list<block, node_type::block, 1>(cp_start, cp_end)
 {
-    _child_nodes.reserve(3);
-    _child_nodes.resize(1);
 }
 
-block::~block()
-{ }
-
-void block::append_child(node *n)
-{
-    _child_nodes.push_back(n);
-}
+block::~block() { }
 
 attribute::attribute(code_point cp) :
     branch_node<attribute, 2, node_type::attribute>(cp, cp)
-{
-}
+{ }
 
-attribute::~attribute()
-{
-}
+attribute::~attribute() { }
 
 while_stmt::while_stmt(code_point cp_start, code_point cp_end) :
     branch_node<while_stmt, 3, node_type::while_stmt>(cp_start, cp_end)
-{
-}
+{ }
 
-while_stmt::~while_stmt()
-{
-}
+while_stmt::~while_stmt() { }
 
 
 
 do_while_stmt::do_while_stmt(code_point cp_start, code_point cp_end) :
     branch_node<do_while_stmt, 3, node_type::do_while_stmt>(cp_start, cp_end)
-{
-}
+{ }
 
-do_while_stmt::~do_while_stmt()
-{
-}
+do_while_stmt::~do_while_stmt() { }
 
 use_stmt::use_stmt(code_point cp) :
     branch_node<use_stmt, 2, node_type::use_stmt>(cp, cp)
-{
-}
+{ }
 
 use_stmt::~use_stmt() { }
 
@@ -167,15 +180,10 @@ for_stmt::for_stmt(code_point cp_start, code_point cp_end) :
 for_stmt::~for_stmt() { }
 
 scoped_identifier::scoped_identifier(code_point cp_start, code_point cp_end) :
-    variable_branch_node<scoped_identifier, node_type::scoped_identifier>(cp_start, cp_end)
+    list<scoped_identifier, node_type::scoped_identifier>(cp_start, cp_end)
 { }
 
 scoped_identifier::~scoped_identifier() { }
-
-void scoped_identifier::append_child(node *n)
-{
-    _child_nodes.push_back(n);
-}
 
 base_tree::base_tree(code_point start_cp, code_point end_cp) :
     branch_node<base_tree, 2, node_type::impl_decl>(start_cp, end_cp)
@@ -202,32 +210,9 @@ import_stmt::import_stmt(code_point cp) :
 
 import_stmt::~import_stmt() { }
 
-splice_type::splice_type(code_point cp) :
-    branch_node<splice_type, 2, node_type::array_type>(cp, cp)
+
+attribute_list::attribute_list(code_point start_cp, code_point end_cp) :
+    list<attribute_list, node_type::attribute_list>(start_cp, end_cp)
 { }
 
-splice_type::~splice_type() { }
-
-owned_ptr_type::owned_ptr_type(code_point cp) :
-    branch_node<owned_ptr_type, 2, node_type::owned_ptr_type>(cp, cp)
-{ }
-
-owned_ptr_type::~owned_ptr_type() { }
-
-raw_ptr_type::raw_ptr_type(code_point cp) :
-    branch_node<raw_ptr_type, 2, node_type::raw_ptr_type>(cp, cp)
-{ }
-
-raw_ptr_type::~raw_ptr_type() { }
-
-ref_type::ref_type(code_point cp) :
-    branch_node<ref_type, 2, node_type::ref_type>(cp, cp)
-{ }
-
-ref_type::~ref_type() { }
-
-ref_ref_type::ref_ref_type(code_point cp) :
-    branch_node<ref_ref_type, 2, node_type::ref_ref_type>(cp, cp)
-{ }
-
-ref_ref_type::~ref_ref_type() { }
+attribute_list::~attribute_list() { }

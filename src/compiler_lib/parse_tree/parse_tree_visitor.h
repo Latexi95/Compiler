@@ -4,6 +4,7 @@ class expr;
 class operation;
 class unary_expr;
 class as_cast_expr;
+class value_list;
 class base_tree;
 class block;
 class for_stmt;
@@ -31,6 +32,7 @@ class raw_ptr_type;
 class ref_type;
 class ref_ref_type;
 class attribute;
+class attribute_list;
 class u8_string_literal;
 class u16_string_literal;
 class u32_string_literal;
@@ -52,6 +54,7 @@ public:
     VISITOR_VISIT(operation);
     VISITOR_VISIT(unary_expr);
     VISITOR_VISIT(as_cast_expr);
+    VISITOR_VISIT(value_list);
     VISITOR_VISIT(base_tree);
     VISITOR_VISIT(block);
     VISITOR_VISIT(for_stmt);
@@ -79,6 +82,7 @@ public:
     VISITOR_VISIT(ref_type);
     VISITOR_VISIT(ref_ref_type);
     VISITOR_VISIT(attribute);
+    VISITOR_VISIT(attribute_list);
     VISITOR_VISIT(u8_string_literal);
     VISITOR_VISIT(u16_string_literal);
     VISITOR_VISIT(u32_string_literal);
@@ -88,5 +92,5 @@ public:
     VISITOR_VISIT(identifier);
     VISITOR_VISIT(scoped_identifier);
 };
-
+#undef VISITOR_VISIT
 }

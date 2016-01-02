@@ -15,6 +15,7 @@ enum class node_type {
     operation,
     unary_expr,
     as_cast_expr,
+    value_list,
 
     base_tree,
     block,
@@ -50,6 +51,7 @@ enum class node_type {
 
 
     attribute,
+    attribute_list,
 
     u8_string_literal,
     u16_string_literal,
@@ -161,6 +163,32 @@ protected:
     T _value;
 };
 
+template <typename T, node_type TYPE, unsigned RESERVE = 0>
+class list : public variable_branch_node<T, TYPE> {
+public:
+    list(code_point start_cp, code_point end_cp) :
+        variable_branch_node<T, TYPE>(start_cp, end_cp) {
+        if (RESERVE > 0) {
+            _child_nodes.reserve(RESERVE + 2);
+            _child_nodes.resize(RESERVE);
+        }
+    }
+    virtual node *child_node(int i) const {
+        assert(i >= 0 && i <= _child_nodes.size());
+        return _child_nodes[i];
+    }
+    virtual void set_child_node(int i, node *n) {
+        assert(i >= 0 && i <= _child_nodes.size());
+        _child_nodes[i] = n;
+    }
+    virtual int child_node_count() const { return _child_nodes.size(); }
+
+    void append_child(node *n) {_child_nodes.push_back(n);}
+
+protected:
+    std::vector<node*> _child_nodes;
+};
+
 class u8_string_literal : public literal<string_view, node_type::u8_string_literal> {};
 class u16_string_literal : public literal<string_view, node_type::u16_string_literal> {};
 class u32_string_literal : public literal<string_view, node_type::u32_string_literal> {};
@@ -185,25 +213,10 @@ protected:
     wildcard_type _wildcard_type;
 };
 
-class scoped_identifier : public variable_branch_node<scoped_identifier, node_type::scoped_identifier> {
+class scoped_identifier : public list<scoped_identifier, node_type::scoped_identifier> {
 public:
     scoped_identifier(code_point cp_start, code_point cp_end);
     ~scoped_identifier();
-
-    virtual node *child_node(int i) const {
-        assert(i >= 0 && i <= _child_nodes.size());
-        return _child_nodes[i];
-    }
-    virtual void set_child_node(int i, node *n) {
-        assert(i >= 0 && i <= _child_nodes.size());
-        _child_nodes[i] = n;
-    }
-    virtual int child_node_count() const { return _child_nodes.size(); }
-
-    void append_child(node *n);
-
-protected:
-    std::vector<node*> _child_nodes;
 };
 
 
@@ -232,25 +245,14 @@ protected:
     oper _operator;
 };
 
-class expr : public variable_branch_node<expr, node_type::expr> {
+class expr : public list<expr, node_type::expr, 1> {
 public:
     expr(code_point cp);
-    ~expr() {}
-    virtual node *child_node(int i) const {
-        assert(i >= 0 && i <= _child_nodes.size());
-        return _child_nodes[i];
-    }
-    virtual void set_child_node(int i, node *n) {
-        assert(i >= 0 && i <= _child_nodes.size());
-        _child_nodes[i] = n;
-    }
-
-    virtual int child_node_count() const { return _child_nodes.size(); }
+    ~expr();
 
     node *first_operand() const { return _child_nodes[0]; }
     void set_operations(const std::vector<node*> &operations);
 private:
-    std::vector<node*> _child_nodes;
 };
 
 class attribute : public branch_node<attribute, 2, node_type::attribute> {
@@ -262,6 +264,12 @@ public:
     DEF_CHILD_NODE(param_list, 1)
 };
 
+class attribute_list : public list<attribute_list, node_type::attribute_list> {
+public:
+    attribute_list(code_point start_cp, code_point end_cp);
+    ~attribute_list();
+};
+
 class as_cast_expr : public branch_node<as_cast_expr, 2, node_type::as_cast_expr> {
 public:
     as_cast_expr(code_point cp);
@@ -271,16 +279,11 @@ public:
     DEF_CHILD_NODE(target_type, 1)
 };
 
-/*  basic_type,
-    template_type,
-    tuple_type,
-    function_type,
-    array_type,
-    splice_type,
-    owned_ptr_type,
-    raw_ptr_type,
-    ref_type,
-    ref_ref_type,*/
+class value_list : public list<value_list, node_type::value_list> {
+public:
+    value_list(code_point start_cp, code_point end_cp);
+    ~value_list();
+};
 
 enum type_flag {
     volatile_type = 1,
@@ -319,27 +322,12 @@ public:
     DEF_CHILD_NODE(template_params, 2)
 };
 
-class tuple_type : public variable_branch_node<tuple_type, node_type::tuple_type>, public type_base {
+class tuple_type : public list<tuple_type, node_type::tuple_type, 1>, public type_base {
 public:
     tuple_type(code_point cp_start, code_point cp_end);
     ~tuple_type();
 
-    virtual node *child_node(int i) const {
-        assert(i >= 0 && i <= _child_nodes.size());
-        return _child_nodes[i];
-    }
-    virtual void set_child_node(int i, node *n) {
-        assert(i >= 0 && i <= _child_nodes.size());
-        _child_nodes[i] = n;
-    }
-    virtual int child_node_count() const { return _child_nodes.size(); }
-
-    void append_child(node *n);
-
-
     DEF_CHILD_NODE(attribute, 0)
-protected:
-    std::vector<node*> _child_nodes;
 };
 
 
@@ -417,26 +405,12 @@ public:
 
 
 
-class block : public variable_branch_node<block, node_type::block> {
+class block : public list<block, node_type::block, 1> {
 public:
     block(code_point cp_start, code_point cp_end);
     ~block();
 
-    virtual node *child_node(int i) const {
-        assert(i >= 0 && i <= _child_nodes.size());
-        return _child_nodes[i];
-    }
-    virtual void set_child_node(int i, node *n) {
-        assert(i >= 0 && i <= _child_nodes.size());
-        _child_nodes[i] = n;
-    }
-    virtual int child_node_count() const { return _child_nodes.size(); }
-
-    void append_child(node *n);
-
     DEF_CHILD_NODE(attribute, 0)
-protected:
-    std::vector<node*> _child_nodes;
 };
 
 class use_stmt : public branch_node<use_stmt, 2, node_type::use_stmt> {
