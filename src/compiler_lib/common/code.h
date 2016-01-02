@@ -7,7 +7,12 @@
 #include "../../common/code_point.h"
 #include "token.h"
 
-
+/**
+ * @brief The code class contains source files in the text form and lexer tokens.
+ *
+ * The code class is used to pass source files to the lexer and tokens to the parser.
+ * It also handles mapping between code_point and code_point_info.
+ */
 class code
 {
 public:
