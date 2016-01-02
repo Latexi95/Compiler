@@ -201,3 +201,33 @@ import_stmt::import_stmt(code_point cp) :
 { }
 
 import_stmt::~import_stmt() { }
+
+splice_type::splice_type(code_point cp) :
+    branch_node<splice_type, 2, node_type::array_type>(cp, cp)
+{ }
+
+splice_type::~splice_type() { }
+
+owned_ptr_type::owned_ptr_type(code_point cp) :
+    branch_node<owned_ptr_type, 2, node_type::owned_ptr_type>(cp, cp)
+{ }
+
+owned_ptr_type::~owned_ptr_type() { }
+
+raw_ptr_type::raw_ptr_type(code_point cp) :
+    branch_node<raw_ptr_type, 2, node_type::raw_ptr_type>(cp, cp)
+{ }
+
+raw_ptr_type::~raw_ptr_type() { }
+
+ref_type::ref_type(code_point cp) :
+    branch_node<ref_type, 2, node_type::ref_type>(cp, cp)
+{ }
+
+ref_type::~ref_type() { }
+
+ref_ref_type::ref_ref_type(code_point cp) :
+    branch_node<ref_ref_type, 2, node_type::ref_ref_type>(cp, cp)
+{ }
+
+ref_ref_type::~ref_ref_type() { }

@@ -64,6 +64,8 @@ token_type lexer::is_keyword(code_point start, code_point end)
 {
     static std::unordered_map<string_view, token_type> keywordmap = {
         {"as", token_type::k_as},
+        {"if", token_type::k_if},
+        {"else", token_type::k_else},
         {"for"_sv, token_type::k_for},
         {"in"_sv, token_type::k_in},
         {"where"_sv, token_type::k_where},
@@ -369,6 +371,34 @@ bool lexer::handle_string_literals()
         bool escape = false;
         bool inline_string_escape = false;
         while ((c = next()) && (c != '"' || escape)) {
+            //Handle inline string expression {{expr}}
+            if (inline_string_escape) {
+                if (c == '{') {
+                    _c.add_string_literal(start, literal);
+                    add_token(string_literal_type, start, _cp - 1);
+                    add_token(token_type::t_string_inline_expr_start, _cp - 1, _cp + 1);
+                    skip(1);
+                    if (!tokenize_inline_string_expr()) {
+                        if (_fatal_error)
+                            return true;
+                        continue;
+                    }
+                    start = _cp;
+                    continue;
+                }
+                else {
+                    literal += '{';
+                }
+                inline_string_escape = false;
+            }
+            else if (c == '{') {
+                inline_string_escape = true;
+                continue;
+            }
+            else {
+                inline_string_escape = false;
+            }
+
             if (escape) {
                 switch (c) {
                 case '\'': literal += '\''; break;
@@ -410,24 +440,6 @@ bool lexer::handle_string_literals()
             }
             else {
                 literal += c;
-            }
-
-            //Handle inline string expression {{expr}}
-            if (inline_string_escape && c == '{') {
-                add_token(token_type::t_string_inline_expr_start, _cp - 1, _cp + 1);
-                skip(1);
-                if (!tokenize_inline_string_expr()) {
-                    if (_fatal_error)
-                        return true;
-                    continue;
-                }
-                inline_string_escape = false;
-            }
-            else if (c == '{') {
-                inline_string_escape = true;
-            }
-            else {
-                inline_string_escape = false;
             }
         }
 
@@ -516,8 +528,9 @@ bool lexer::tokenize_inline_string_expr()
 {
     size_t brace_depth = 0;
     while (ch() != '\0' && !_fatal_error) {
-        if (ch() == '}' && ch(1) == '}}' && brace_depth == 0) {
+        if (ch() == '}' && ch(1) == '}' && brace_depth == 0) {
             add_token(token_type::t_string_inline_expr_end, _cp, _cp + 2);
+            skip(1);
             return true;
         }
 

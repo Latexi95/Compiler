@@ -75,6 +75,7 @@ static const char * const token_names[] = {
 
     "k_as",
     "k_if",
+    "k_else",
     "k_for",
     "k_in",
     "k_where",

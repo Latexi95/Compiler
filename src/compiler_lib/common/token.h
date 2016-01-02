@@ -77,6 +77,7 @@ enum class token_type {
 
     k_as,
     k_if,
+    k_else,
     k_for,
     k_in,
     k_where,

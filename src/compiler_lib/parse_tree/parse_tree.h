@@ -282,18 +282,34 @@ public:
     ref_type,
     ref_ref_type,*/
 
+enum type_flag {
+    volatile_type = 1,
+    mutable_type = 2
+};
 
+class type_base {
+public:
+    std::uint32_t type_flags() const { return _type_flags; }
+    void set_type_flags(std::uint32_t f) { _type_flags = f; }
+    void enable_type_flag(type_flag f) { _type_flags |= f; }
+protected:
+    std::uint32_t _type_flags;
+};
 
-class basic_type : public branch_node<basic_type, 2, node_type::basic_type> {
+class basic_type : public branch_node<basic_type, 2, node_type::basic_type>, public type_base {
 public:
     basic_type(code_point cp);
     ~basic_type();
 
     DEF_CHILD_NODE(attribute, 0)
     DEF_CHILD_NODE(id, 1)
+
+
+protected:
+
 };
 
-class template_type : public branch_node<template_type, 3, node_type::template_type> {
+class template_type : public branch_node<template_type, 3, node_type::template_type>, public type_base {
 public:
     template_type(code_point cp);
     ~template_type();
@@ -303,7 +319,7 @@ public:
     DEF_CHILD_NODE(template_params, 2)
 };
 
-class tuple_type : public variable_branch_node<tuple_type, node_type::tuple_type> {
+class tuple_type : public variable_branch_node<tuple_type, node_type::tuple_type>, public type_base {
 public:
     tuple_type(code_point cp_start, code_point cp_end);
     ~tuple_type();
@@ -327,7 +343,7 @@ protected:
 };
 
 
-class function_type : public branch_node<function_type, 3, node_type::function_type> {
+class function_type : public branch_node<function_type, 3, node_type::function_type>, public type_base {
 public:
     function_type(code_point cp);
     ~function_type();
@@ -337,13 +353,66 @@ public:
     DEF_CHILD_NODE(return_type, 2)
 };
 
-class array_type : public branch_node<array_type, 3, node_type::array_type> {
+class array_type : public branch_node<array_type, 3, node_type::array_type>, public type_base {
+public:
     array_type(code_point cp);
     ~array_type();
 
     DEF_CHILD_NODE(attribute, 0)
     DEF_CHILD_NODE(base_type, 1)
     DEF_CHILD_NODE(dimension_list, 2)
+};
+
+class splice_type : public branch_node<splice_type, 2, node_type::array_type>, public type_base {
+public:
+    splice_type(code_point cp);
+    ~splice_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(base_type, 1)
+
+    int dimension_count() const { return _dimension_count; }
+    void set_dimension_count(int d) { _dimension_count = d; }
+protected:
+    int _dimension_count;
+};
+
+class owned_ptr_type : public branch_node<owned_ptr_type, 2, node_type::owned_ptr_type>, public type_base {
+public:
+    owned_ptr_type(code_point cp);
+    ~owned_ptr_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(base_type, 1)
+};
+
+class raw_ptr_type : public branch_node<raw_ptr_type, 2, node_type::raw_ptr_type>, public type_base {
+public:
+    raw_ptr_type(code_point cp);
+    ~raw_ptr_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(base_type, 1)
+
+};
+
+class ref_type : public branch_node<ref_type, 2, node_type::ref_type>, public type_base {
+public:
+    ref_type(code_point cp);
+    ~ref_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(base_type, 1)
+
+};
+
+class ref_ref_type : public branch_node<ref_ref_type, 2, node_type::ref_ref_type>, public type_base {
+public:
+    ref_ref_type(code_point cp);
+    ~ref_ref_type();
+
+    DEF_CHILD_NODE(attribute, 0)
+    DEF_CHILD_NODE(base_type, 1)
 };
 
 

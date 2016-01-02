@@ -79,5 +79,4 @@ BOOST_AUTO_TEST_CASE ( automated_lexer_tests ) {
 #undef AUTOMATED_TEST
 
     BOOST_CHECK_MESSAGE(success, "All automated lexer tests didn't complete successfully");
-    BOOST_CHECK_EQUAL(success, true);
 }
