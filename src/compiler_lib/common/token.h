@@ -13,8 +13,6 @@ enum class token_type {
     t_u32_string_literal,
     t_ascii_string_literal,
     t_target_comment,
-    t_string_inline_expr_start,
-    t_string_inline_expr_end,
 
     t_and,
     t_and_and,
@@ -103,6 +101,9 @@ enum class token_type {
     k_fn,
     k_return,
 
+    k_true,
+    k_false,
+
     invalid,
     last_token_type
 };
@@ -110,6 +111,7 @@ enum class token_type {
 class token
 {
 public:
+    token();
     token(token_type t, string_view txt, code_point cp);
     token_type type() const { return _type; }
     string_view text() const { return _name; }

@@ -26,6 +26,7 @@ public:
     const std::vector<token> &tokens() const { return _tokens; }
 
     code_point begin() const { return 0; }
+    code_point end() const { return _code.size(); }
     code_point next(code_point cp) const { return cp + 1; }
 
     char c(code_point cp) const { if (cp >= _code.size()) return '\0'; return _code[cp]; }
@@ -33,6 +34,11 @@ public:
     string_view view_range(code_point cp, size_t cpEnd) const;
 
     code_point_info info(code_point cp) const;
+    code_point_info info_tok(int index) const;
+
+    token tok(int index) const;
+
+    std::string tok_str(int index) const;
 
 
     void add_string_literal(code_point location, const std::string &lit);

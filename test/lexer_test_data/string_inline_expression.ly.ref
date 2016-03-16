@@ -1,3 +1,0 @@
-id t_colon_assign t_integer_literal ;
-id t_colon_assign t_u8_string_literal t_string_inline_expr_start id t_string_inline_expr_end t_u8_string_literal ;
-id t_colon_assign t_u8_string_literal t_string_inline_expr_start k_if id t_less t_integer_literal { id } k_else { id } t_string_inline_expr_end t_u8_string_literal ;

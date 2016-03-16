@@ -36,8 +36,6 @@ private:
     bool handle_string_literals();
     bool handle_numbers();
 
-    bool tokenize_inline_string_expr();
-
     char ch(code_point offset = 0);
     char next_rc();
     char next();

@@ -52,6 +52,24 @@ code_point_info code::info(code_point cp) const
     };
 }
 
+code_point_info code::info_tok(int index) const
+{
+    return info(tok(index).point());
+}
+
+token code::tok(int index) const
+{
+    if (index < 0 || index >= _tokens.size()) {
+        return token();
+    }
+    return _tokens[index];
+}
+
+std::string code::tok_str(int index) const
+{
+    return tok(index).to_string();
+}
+
 void code::add_string_literal(code_point location, const std::string &lit)
 {
     _string_literals[location] = lit;

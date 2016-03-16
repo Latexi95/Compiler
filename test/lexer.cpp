@@ -73,7 +73,6 @@ BOOST_AUTO_TEST_CASE ( automated_lexer_tests ) {
 #define AUTOMATED_TEST(_file_) success &= tester.test(TEST_DIRECTORY _file_, TEST_DIRECTORY _file_ ".ref")
 
     AUTOMATED_TEST("/lexer_test_data/basic.ly");
-    AUTOMATED_TEST("/lexer_test_data/string_inline_expression.ly");
 
 
 #undef AUTOMATED_TEST

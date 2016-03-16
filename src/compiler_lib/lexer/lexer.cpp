@@ -89,7 +89,10 @@ token_type lexer::is_keyword(code_point start, code_point end)
         {"reinterpret_cast", token_type::k_reinterpret_cast},
         {"compile_time", token_type::k_compile_time},
         {"fn", token_type::k_fn},
-        {"return", token_type::k_return}
+        {"return", token_type::k_return},
+
+        {"true", token_type::k_true},
+        {"false", token_type::k_false}
     };
 
     auto it = keywordmap.find(_c.view_range(start, end));
@@ -369,36 +372,7 @@ bool lexer::handle_string_literals()
         std::string literal;
         char c = '\0';
         bool escape = false;
-        bool inline_string_escape = false;
         while ((c = next()) && (c != '"' || escape)) {
-            //Handle inline string expression {{expr}}
-            if (inline_string_escape) {
-                if (c == '{') {
-                    _c.add_string_literal(start, literal);
-                    add_token(string_literal_type, start, _cp - 1);
-                    add_token(token_type::t_string_inline_expr_start, _cp - 1, _cp + 1);
-                    skip(1);
-                    if (!tokenize_inline_string_expr()) {
-                        if (_fatal_error)
-                            return true;
-                        continue;
-                    }
-                    start = _cp;
-                    continue;
-                }
-                else {
-                    literal += '{';
-                }
-                inline_string_escape = false;
-            }
-            else if (c == '{') {
-                inline_string_escape = true;
-                continue;
-            }
-            else {
-                inline_string_escape = false;
-            }
-
             if (escape) {
                 switch (c) {
                 case '\'': literal += '\''; break;
@@ -521,43 +495,6 @@ bool lexer::handle_numbers()
         add_token(number_type, number_start, number_end);
         return true;
     }
-    return false;
-}
-
-bool lexer::tokenize_inline_string_expr()
-{
-    size_t brace_depth = 0;
-    while (ch() != '\0' && !_fatal_error) {
-        if (ch() == '}' && ch(1) == '}' && brace_depth == 0) {
-            add_token(token_type::t_string_inline_expr_end, _cp, _cp + 2);
-            skip(1);
-            return true;
-        }
-
-        if (skip_spaces()) continue;
-        if (handle_comments()) continue;
-        if (handle_operators()) {
-            switch (_c.tokens().back().type()) {
-            case token_type::t_brace_left:
-                ++brace_depth; break;
-            case token_type::t_brace_right:
-                --brace_depth; break;
-            default:
-                break;
-            }
-
-
-            continue;
-        }
-        if (handle_string_literals()) continue;
-        if (handle_identifiers()) continue;
-        if (handle_numbers()) continue;
-
-        _err->unexpected_character(_cp, ch());
-        _fatal_error = true;
-        break;
-    }
-
     return false;
 }
 

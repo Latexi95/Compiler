@@ -7,6 +7,7 @@ add_definitions(-DBOOST_NO_AUTO_PTR)
 find_package(Boost 1.59.0 REQUIRED COMPONENTS serialization system filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories("../.")
+include_directories(".")
 
 add_library(compiler_lib ${SRC})
 target_link_libraries(compiler_lib ${Boost_FILESYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY})

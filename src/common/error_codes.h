@@ -10,7 +10,10 @@ enum class error_code {
     invalid_number_literal,
 
     unexpected_character,
+
     //Parser error codes
+
+    expecting_identifier,
 };
 
 enum class warning_code {

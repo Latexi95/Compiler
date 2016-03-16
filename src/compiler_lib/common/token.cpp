@@ -11,8 +11,8 @@ static const char * const token_names[] = {
     "t_u32_string_literal",
     "t_ascii_string_literal",
     "t_target_comment",
-    "t_string_inline_expr_start",
-    "t_string_inline_expr_end",
+    "t_true",
+    "t_false",
 
     "t_and",
     "t_and_and",
@@ -107,6 +107,12 @@ static const char * const token_names[] = {
 static_assert(sizeof(token_names) / sizeof(char*) == (int)token_type::last_token_type ,
               "token_names doesn't match token_type enum. Also remember to update lexer...");
 
+
+token::token() :
+    _type(token_type::invalid),
+    _cp(0)
+{
+}
 
 token::token(token_type t, string_view txt, code_point cp) :
     _type(t),

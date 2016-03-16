@@ -62,6 +62,8 @@ enum class node_type {
     identifier,
     scoped_identifier,
     wildcarded_identifier,
+
+    targeted_comment,
 };
 
 #define DEF_CHILD_NODE(_name_, _index_) \
@@ -563,6 +565,7 @@ public:
 
 
 class base_tree : public branch_node<base_tree, 2, node_type::impl_decl> {
+public:
     base_tree(code_point start_cp, code_point end_cp);
     ~base_tree();
 
